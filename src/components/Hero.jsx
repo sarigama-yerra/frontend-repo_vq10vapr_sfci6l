@@ -1,11 +1,38 @@
-import Spline from '@splinetool/react-spline'
+import { useEffect, useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 
 export default function Hero() {
+  const [SplineComp, setSplineComp] = useState(null)
+  const [splineError, setSplineError] = useState(null)
+
+  // Lazy-load Spline on client only. If it fails, we still render the rest of the hero.
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const mod = await import('@splinetool/react-spline')
+        if (mounted) setSplineComp(() => mod.default)
+      } catch (err) {
+        if (mounted) setSplineError('3D background failed to load')
+        // Fail silently so the page still renders
+      }
+    })()
+    return () => { mounted = false }
+  }, [])
+
+  const skills = useMemo(() => (
+    ["React", "TypeScript", "Node.js", "Python", "FastAPI", "PostgreSQL", "AWS", "Docker"]
+  ), [])
+
   return (
     <section id="home" className="relative min-h-[90vh] flex items-center overflow-hidden">
+      {/* Background 3D (optional) */}
       <div className="absolute inset-0">
-        <Spline scene="https://prod.spline.design/VJLoxp84lCdVfdZu/scene.splinecode" style={{ width: '100%', height: '100%' }} />
+        {SplineComp ? (
+          <SplineComp scene="https://prod.spline.design/VJLoxp84lCdVfdZu/scene.splinecode" style={{ width: '100%', height: '100%' }} />
+        ) : (
+          <div className="h-full w-full bg-[radial-gradient(1200px_600px_at_10%_-10%,rgba(56,189,248,0.20),transparent_60%),radial-gradient(1200px_600px_at_90%_10%,rgba(129,140,248,0.20),transparent_60%)]" />
+        )}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-900/60 via-slate-900/30 to-slate-900" />
       </div>
 
@@ -26,6 +53,9 @@ export default function Hero() {
             <p className="mt-4 text-lg text-blue-100/90 max-w-xl">
               A software engineer crafting delightful web experiences with React, TypeScript, and cloud-native backends. I blend clean code, product thinking, and playful 3D interactions.
             </p>
+            {splineError && (
+              <p className="mt-3 text-sm text-blue-200/80">{splineError}</p>
+            )}
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <a href="#projects" className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium shadow-lg shadow-cyan-500/20 hover:opacity-95 transition">
                 View Projects
@@ -42,7 +72,7 @@ export default function Hero() {
             variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.15 } } }}
             className="grid grid-cols-2 gap-4 lg:gap-6"
           >
-            {["React", "TypeScript", "Node.js", "Python", "FastAPI", "PostgreSQL", "AWS", "Docker"].map((skill) => (
+            {skills.map((skill) => (
               <motion.li
                 key={skill}
                 variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
